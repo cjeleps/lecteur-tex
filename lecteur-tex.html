@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lecteur LaTeX</title>
+<style>
+:root{--bg:#fbfaf7;--fg:#1d1d1b;--mut:#6b6a64;--card:#ffffff;--bd:#e2dfd6;--ac:#b4442b;--code:#f1eee6;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171716;--fg:#e9e7e0;--mut:#9a988f;--card:#222220;--bd:#34332f;--ac:#e8896f;--code:#2a2926;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#171716;--fg:#e9e7e0;--mut:#9a988f;--card:#222220;--bd:#34332f;--ac:#e8896f;--code:#2a2926;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--card);z-index:10}
+header.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--card);border-bottom:1px solid var(--bd);padding:8px 12px}
+.row{display:flex;align-items:center;gap:8px}
+.name{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn{min-height:40px;min-width:40px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--fg);font:inherit;font-size:15px;cursor:pointer}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+#f{position:absolute;opacity:0;width:1px;height:1px}
+.tabs{display:flex;gap:6px;margin-top:8px}
+.tabs .btn{flex:1;min-height:36px}
+.tabs .on{border-color:var(--ac);color:var(--ac);font-weight:600}
+main{max-width:46rem;margin:0 auto;padding:16px 16px 48px}
+#empty{text-align:center;padding:12vh 8px}
+#empty h1{font-size:1.5rem;margin:0 0 8px}
+#empty p{color:var(--mut);margin:0 0 20px}
+#empty .btn{margin:4px}
+#out{font-family:"Latin Modern Roman","Computer Modern",Georgia,"Times New Roman",serif;line-height:1.6;overflow-wrap:anywhere}
+#out p{margin:.7em 0;text-align:justify;hyphens:auto}
+#out h2,#out h3,#out h4,#out h5{line-height:1.25;margin:1.4em 0 .4em}
+#out h2{font-size:1.45em;border-bottom:1px solid var(--bd);padding-bottom:.15em}
+#out h3{font-size:1.2em}#out h4,#out h5{font-size:1.05em}
+.tb{text-align:center;margin:.5em 0 1.5em}.tb h1{font-size:1.7em;margin:.2em 0}.tb .au{font-size:1.1em}.tb .dt{color:var(--mut)}
+.env{margin:1em 0;padding:.5em .9em;border-left:3px solid var(--ac);background:var(--card);border-radius:0 8px 8px 0}
+.env.theorem,.env.thm,.env.lemma,.env.lem,.env.proposition,.env.prop,.env.corollary,.env.cor{font-style:italic}
+.env.proof,.env.preuve,.env.demonstration{border-left-color:var(--bd);background:transparent;font-style:normal}
+.env p{margin:.4em 0}.qed{float:right}
+.ctr{text-align:center}.ctr p{text-align:center}
+blockquote{margin:1em 0;padding-left:1em;border-left:3px solid var(--bd);color:var(--mut)}
+pre{background:var(--code);padding:12px;border-radius:8px;overflow-x:auto;font-size:.85em;line-height:1.45}
+code{background:var(--code);padding:0 .3em;border-radius:4px;font-size:.9em}
+.fn{font-size:.8em;color:var(--mut)}.sc{font-variant:small-caps}
+.tw{overflow-x:auto;margin:1em 0}table{border-collapse:collapse;margin:0 auto}td{border:1px solid var(--bd);padding:4px 10px}
+.cap{text-align:center;color:var(--mut);font-size:.9em}
+.eq{margin:.8em 0}
+mjx-container[display="true"]{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.mac{height:0;overflow:hidden;visibility:hidden}
+#srcv{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}
+a{color:var(--ac)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="row">
+    <div class="name" id="fname">Lecteur LaTeX</div>
+    <button class="btn" id="m" aria-label="Réduire le texte">A−</button>
+    <button class="btn" id="p" aria-label="Agrandir le texte">A+</button>
+    <button class="btn" id="th" aria-label="Thème">◐</button>
+    <label class="btn pri" for="f">Ouvrir</label><input type="file" id="f">
+  </div>
+  <div class="tabs" id="tabs" hidden>
+    <button class="btn on" data-v="r">Rendu</button>
+    <button class="btn" data-v="s">Source</button>
+  </div>
+</header>
+<main>
+  <section id="empty">
+    <h1>Lecteur de fichiers .tex</h1>
+    <p>Ouvre un fichier LaTeX depuis ton téléphone : formules, sections, listes, théorèmes et tableaux sont affichés.</p>
+    <label class="btn pri" for="f">Ouvrir un fichier .tex</label>
+    <button class="btn" id="ex">Voir un exemple</button>
+  </section>
+  <article id="out" hidden></article>
+  <pre id="srcv" hidden></pre>
+</main>
+
+<script>
+window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']],processEnvironments:true},svg:{fontCache:'global'},startup:{typeset:false}};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" onload="MathJax.startup.promise.then(typeset)"></script>
+<script>
+const $=s=>document.querySelector(s);
+let src='',fname='',fs=17,view='r';
+try{fs=+localStorage.getItem('fs')||17}catch(e){}
+
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const ESC=['$','%','&amp;','_','#','{','}'];
+const A='((?:[^{}]|\\{[^{}]*\\})*)';
+const R=(p,f)=>new RegExp(p.replace(/ARG/g,A),f||'g');
+const NAMES={theorem:'Théorème',thm:'Théorème',lemma:'Lemme',lem:'Lemme',proposition:'Proposition',prop:'Proposition',corollary:'Corollaire',cor:'Corollaire',definition:'Définition',defn:'Définition',remark:'Remarque',rem:'Remarque',example:'Exemple',exemple:'Exemple',exercise:'Exercice',exo:'Exercice',proof:'Preuve',preuve:'Preuve',demonstration:'Démonstration',abstract:'Résumé',note:'Note'};
+
+function convert(tex){
+  const blocks=[],maths=[];
+  const B=h=>{blocks.push(h);return '\n\n\uE012'+(blocks.length-1)+'\uE013\n\n'};
+  const M=h=>'\uE010'+(maths.push(h)-1)+'\uE011';
+  const today=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+  const para=s=>s.split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean).map(x=>/^\uE012\d+\uE013$/.test(x)?x:'<p>'+x+'</p>').join('\n');
+  const ln=(u,t)=>/^(https?:|mailto:)/i.test(u)?'<a href="'+u.replace(/"/g,'%22').replace(/~/g,'%7E')+'" target="_blank" rel="noopener">'+t+'</a>':t;
+
+  tex=tex.replace(/\r\n?/g,'\n').replace(/\\%|%.*$/gm,m=>m==='\\%'?m:'');
+  let pre='',body=tex;
+  const bd=tex.indexOf('\\begin{document}');
+  if(bd>=0){pre=tex.slice(0,bd);body=tex.slice(bd+16).replace(/\\end\{document\}[\s\S]*$/,'')}
+  const grab=n=>{const m=tex.match(R('\\\\'+n+'\\{ARG\\}',''));return m?m[1]:''};
+  const macros=pre.split('\n').filter(l=>/^\s*\\(re|provide)?newcommand|^\s*\\DeclareMathOperator/.test(l));
+
+  const xm=s=>s.replace(/\\\$/g,'\uE000')
+    .replace(/\\begin\{(equation\*?|align\*?|alignat\*?|gather\*?|multline\*?|eqnarray\*?|flalign\*?)\}[\s\S]*?\\end\{\1\}/g,m=>B('<div class="eq">'+M(esc(m))+'</div>'))
+    .replace(/\$\$([\s\S]*?)\$\$/g,(m,c)=>B('<div class="eq">'+M('\\['+esc(c)+'\\]')+'</div>'))
+    .replace(/\\\[([\s\S]*?)\\\]/g,(m,c)=>B('<div class="eq">'+M('\\['+esc(c)+'\\]')+'</div>'))
+    .replace(/\\\(([\s\S]*?)\\\)/g,(m,c)=>M('\\('+esc(c)+'\\)'))
+    .replace(/\$((?:[^$\\]|\\[\s\S])+?)\$/g,(m,c)=>M('\\('+esc(c)+'\\)'))
+    .replace(/\\([%&_#{}])/g,(m,c)=>String.fromCharCode(0xE001+'%&_#{}'.indexOf(c)));
+
+  const pairs=[['textbf','<strong>','</strong>'],['textit','<em>','</em>'],['emph','<em>','</em>'],['textsl','<em>','</em>'],['underline','<u>','</u>'],['texttt','<code>','</code>'],['textsc','<span class="sc">','</span>'],['textrm','<span>','</span>'],['textsf','<span>','</span>'],['mbox','<span>','</span>']];
+  const inl=s=>{
+    let p;
+    do{p=s;
+      for(const[c,a,b]of pairs)s=s.replace(R(String.raw`\\`+c+String.raw`\{ARG\}`),(m,x)=>a+x+b);
+      s=s.replace(R(String.raw`\{\\(?:bf|bfseries)\s+ARG\}`),(m,x)=>'<strong>'+x+'</strong>')
+         .replace(R(String.raw`\{\\(?:it|itshape|em|sl)\s+ARG\}`),(m,x)=>'<em>'+x+'</em>')
+         .replace(R(String.raw`\\footnote\{ARG\}`),(m,x)=>'<span class="fn">['+x+']</span>')
+         .replace(R(String.raw`\\caption\{ARG\}`),(m,x)=>'<div class="cap">'+x+'</div>')
+         .replace(R(String.raw`\\href\{([^}]*)\}\{ARG\}`),(m,u,t)=>ln(u,t));
+    }while(s!==p);
+    return s.replace(/\\url\{([^}]*)\}/g,(m,u)=>ln(u,u))
+      .replace(/\\(?:label|index|vspace\*?|hspace\*?|pagestyle|thispagestyle|setlength)\{[^}]*\}(\{[^}]*\})?/g,'')
+      .replace(/\\(?:ref|eqref|autoref|pageref)\{([^}]*)\}/g,'($1)')
+      .replace(/\\cite[a-z]*(?:\[[^\]]*\])?\{([^}]*)\}/g,'[$1]')
+      .replace(/\\includegraphics(?:\[[^\]]*\])?\{([^}]*)\}/g,'<em>[image : $1]</em>')
+      .replace(/\\par\b/g,'\n\n')
+      .replace(/\\(?:noindent|centering|raggedright|bigskip|medskip|smallskip|newpage|clearpage|pagebreak|large|Large|LARGE|huge|Huge|small|footnotesize|normalsize|tiny|tableofcontents|hline|toprule|midrule|bottomrule|printbibliography)\b ?/g,'')
+      .replace(/``/g,'“').replace(/''/g,'”')
+      .replace(/---/g,'—').replace(/--/g,'–')
+      .replace(/\\(?:ldots|dots)\b ?/g,'…').replace(/\\LaTeX\b ?/g,'LaTeX').replace(/\\TeX\b ?/g,'TeX')
+      .replace(/\\today\b ?/g,today).replace(/\\and\b/g,' · ')
+      .replace(/\\oe\b ?/g,'œ').replace(/\\og\b ?/g,'«&nbsp;').replace(/\\fg\b ?/g,'&nbsp;»')
+      .replace(/\\([`'^"~])\{?([aeiouAEIOUnNyY])\}?/g,(m,a,l)=>(l+{'`':'\u0300',"'":'\u0301','^':'\u0302','"':'\u0308','~':'\u0303'}[a]).normalize('NFC'))
+      .replace(/~/g,'&nbsp;');
+  };
+  const txt=s=>inl(esc(xm(s)));
+
+  // verbatim
+  body=body.replace(/\\begin\{(verbatim\*?|lstlisting|minted)\}(?:\[[^\]]*\])?(?:\{[^}]*\})?([\s\S]*?)\\end\{\1\}/g,(m,n,c)=>B('<pre>'+M(esc(c.replace(/^\n/,'')))+'</pre>'));
+  body=body.replace(/\\verb(.)(.*?)\1/g,(m,d,c)=>M('<code>'+esc(c)+'</code>'));
+  // titre
+  const title=grab('title'),author=grab('author'),date=tex.includes('\\date')?grab('date'):'\\today';
+  body=body.replace(/\\maketitle/,()=>B('<header class="tb"><h1>'+txt(title)+'</h1>'+(author?'<div class="au">'+txt(author)+'</div>':'')+'<div class="dt">'+txt(date)+'</div></header>'));
+
+  let s=txt(body);
+
+  // listes (les plus internes d'abord)
+  const LE=/\\begin\{(itemize|enumerate|description)\}(?:\[[^\]]*\])?((?:(?!\\begin\{(?:itemize|enumerate|description)\})[\s\S])*?)\\end\{\1\}/;
+  while(LE.test(s))s=s.replace(LE,(m,t,c)=>{
+    const items=c.split(/\\item\b/).slice(1).map(x=>{
+      x=x.trim();let lab='';
+      const mm=x.match(/^\[([^\]]*)\]\s*/);
+      if(mm){if(t==='description')lab='<strong>'+mm[1]+'</strong> ';x=x.slice(mm[0].length)}
+      return '<li>'+lab+(/\n\s*\n/.test(x)?para(x):x)+'</li>';
+    });
+    const tag=t==='enumerate'?'ol':'ul';
+    return B('<'+tag+'>'+items.join('')+'</'+tag+'>');
+  });
+  // tableaux
+  s=s.replace(/\\begin\{tabular\*?\}(?:\{[^}]*\})?(?:\{[^}]*\})?([\s\S]*?)\\end\{tabular\*?\}/g,(m,c)=>B('<div class="tw"><table>'+c.split(/\\\\(?:\[[^\]]*\])?/).filter(r=>r.trim()).map(r=>'<tr>'+r.split('&amp;').map(x=>'<td>'+x.trim()+'</td>').join('')+'</tr>').join('')+'</table></div>'));
+  // environnements génériques
+  const GE=/\\begin\{([A-Za-z]+\*?)\}(?:\[([^\]]*)\])?((?:(?!\\begin\{)[\s\S])*?)\\end\{\1\}/;
+  while(GE.test(s))s=s.replace(GE,(m,n,opt,c)=>{
+    const k=n.replace('*','').toLowerCase();c=para(c.trim());
+    if(k==='center')return B('<div class="ctr">'+c+'</div>');
+    if(k==='quote'||k==='quotation')return B('<blockquote>'+c+'</blockquote>');
+    if(NAMES[k])return B('<div class="env '+k+'"><strong>'+NAMES[k]+(opt?' ('+opt+')':'')+'.</strong> '+c+(/^(proof|preuve|demonstration)$/.test(k)?'<span class="qed">∎</span>':'')+'</div>');
+    return B(c);
+  });
+  // sections
+  const cnt=[0,0,0];
+  s=s.replace(R(String.raw`\\(chapter|section|subsection|subsubsection|paragraph)(\*?)(?:\[[^\]]*\])?\{ARG\}`),(m,k,star,t)=>{
+    const lv={chapter:1,section:1,subsection:2,subsubsection:3,paragraph:4}[k];let num='';
+    if(!star&&lv<4){cnt[lv-1]++;for(let i=lv;i<3;i++)cnt[i]=0;num=cnt.slice(0,lv).join('.')+'. '}
+    return B('<h'+(lv+1)+'>'+num+t+'</h'+(lv+1)+'>');
+  });
+
+  let out=para(s),p;
+  do{p=out;out=out.replace(/\uE012(\d+)\uE013/g,(m,i)=>blocks[i])}while(out!==p);
+  out=out.replace(/\\\\(\[[^\]]*\])?/g,'<br>');
+  for(let i=0;i<2;i++)out=out.replace(/\\[a-zA-Z]+\*?(?:\[[^\]]*\])?\{([^{}]*)\}/g,'$1');
+  out=out.replace(/\\[a-zA-Z]+\*?/g,'').replace(/[{}]/g,'')
+         .replace(/[\uE000-\uE006]/g,c=>ESC[c.charCodeAt(0)-0xE000])
+         .replace(/\uE010(\d+)\uE011/g,(m,i)=>maths[i]);
+  if(macros.length)out='<div class="mac">\\('+esc(macros.join(' '))+'\\)</div>'+out;
+  return out;
+}
+
+function typeset(){
+  if(window.MathJax&&MathJax.typesetPromise){
+    try{MathJax.texReset&&MathJax.texReset()}catch(e){}
+    MathJax.typesetPromise([$('#out')]).catch(()=>{});
+  }
+}
+function setView(v){
+  view=v;
+  $('#out').hidden=v!=='r';$('#srcv').hidden=v!=='s';
+  document.querySelectorAll('.tabs .btn').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+}
+function show(){
+  $('#empty').hidden=true;$('#tabs').hidden=false;
+  $('#fname').textContent=fname||'Document';
+  $('#srcv').textContent=src;
+  $('#out').innerHTML=convert(src);
+  size();setView(view);typeset();
+  window.scrollTo(0,0);
+}
+function size(){$('#out').style.fontSize=fs+'px';$('#srcv').style.fontSize=Math.max(11,fs-4)+'px'}
+async function load(f){
+  const buf=await f.arrayBuffer();
+  let t=new TextDecoder('utf-8').decode(buf);
+  if(t.includes('\uFFFD'))t=new TextDecoder('windows-1252').decode(buf);
+  src=t.replace(/^\uFEFF/,'');fname=f.name;
+  try{if(src.length<1500000){localStorage.setItem('last',src);localStorage.setItem('lastname',fname)}}catch(e){}
+  show();
+}
+$('#f').addEventListener('change',e=>{const f=e.target.files[0];if(f)load(f);e.target.value=''});
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(b)setView(b.dataset.v)});
+$('#m').onclick=()=>{fs=Math.max(12,fs-1);try{localStorage.setItem('fs',fs)}catch(e){}size()};
+$('#p').onclick=()=>{fs=Math.min(30,fs+1);try{localStorage.setItem('fs',fs)}catch(e){}size()};
+$('#th').onclick=()=>{
+  const r=document.documentElement;
+  const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+  r.dataset.theme=dark?'light':'dark';
+  try{localStorage.setItem('theme',r.dataset.theme)}catch(e){}
+};
+addEventListener('dragover',e=>e.preventDefault());
+addEventListener('drop',e=>{e.preventDefault();const f=e.dataTransfer&&e.dataTransfer.files[0];if(f)load(f)});
+
+const SAMPLE=String.raw`\documentclass{article}
+\title{Exemple de document}
+\author{Anky}
+\date{\today}
+\newcommand{\R}{\mathbb{R}}
+\begin{document}
+\maketitle
+\section{Introduction}
+Voici du texte avec \textbf{gras}, \emph{italique} et une formule $e^{i\pi}+1=0$.
+\begin{theorem}[Pythagore]
+Dans un triangle rectangle, $a^2+b^2=c^2$.
+\end{theorem}
+\begin{proof}
+Classique. Soit $f:\R\to\R$ continue.
+\end{proof}
+\subsection{Listes et équations}
+\begin{itemize}
+\item premier point
+\item second point avec $x\in\R$
+\end{itemize}
+\[ \int_0^1 x^2\,dx=\frac13 \]
+\begin{align}
+f(x)&=x^2\\
+g(x)&=\sqrt{x}
+\end{align}
+\begin{tabular}{|c|c|}
+\hline
+$x$ & $x^2$ \\
+1 & 1 \\
+2 & 4 \\
+\hline
+\end{tabular}
+\end{document}`;
+$('#ex').onclick=()=>{src=SAMPLE;fname='exemple.tex';show()};
+
+try{
+  const t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t;
+  const last=localStorage.getItem('last');
+  if(last){src=last;fname=localStorage.getItem('lastname')||'';show()}
+}catch(e){}
+</script>
+</body>
+</html>
